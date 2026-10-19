@@ -24,4 +24,6 @@
 #define CLIENT_BUFFER_SIZE 1024    /* Dimensione massima della stringa del comando inviato dal client */
 #define CHUNK_BUFFER_SIZE  4096    /* Dimensione del blocco per la lettura dell'output da popen() e l'invio */
 
+/* AGGIORNAMENTI */
+
 #endif /* COMMON.H */
