@@ -1,16 +1,21 @@
-
 #include <common.h>
 
 
-void setup_signal_handlers(void)
+void setup_signal_handlers(void){
+    //TO DO
+}
+
+void gestioneErrore(const char *messaggio)
 {
-    // TO DO
+    perror(messaggio);
 }
 
 int validate_command(const char *cmd)
 {
     // TO DO
 }
+
+
 /**
  * @brief this main creates a server socket that listens for a client
  * 
@@ -192,5 +197,4 @@ int main(int argc, char const* argv[])
     close(new_socket);
     close(server_fd); //closes the file descriptor
     return 0;
-
 }
