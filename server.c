@@ -1,6 +1,5 @@
 #include <common.h>
 
-
 void setup_signal_handlers(void){
     //TO DO
 }
@@ -14,7 +13,6 @@ int validate_command(const char *cmd)
 {
     // TO DO
 }
-
 
 /**
  * @brief this main creates a server socket that listens for a client
