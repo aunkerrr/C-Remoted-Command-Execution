@@ -17,7 +17,7 @@
 
 /* Network constaints and settings */
 #define PORT 8080
-#define DEFAULT_SERVER 127.0.0.1
+#define DEFAULT_SERVER "127.0.0.1"
 #define LISTEN_BACKLOG 10
 
 /* Buffer sizes */
