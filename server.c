@@ -1,5 +1,10 @@
 #include <common.h>
 
+void gestioneErrore(const char *messaggio)
+{
+    perror(messaggio);
+}
+
 /**
  * @brief this main creates a server socket that listens for a client
  * 
