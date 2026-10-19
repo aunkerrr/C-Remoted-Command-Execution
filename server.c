@@ -35,7 +35,7 @@ int main(int argc, char const* argv[])
     /**
      * @brief socket(): creates a file descriptor and lets us decide how it should be
      * 
-     * @param AF_INET : assingns a domain to our socket AF_(address family) identifies the format used in the addresses 
+     * @param AF_INET : assigns a domain to our socket AF_(address family) identifies the format used in the addresses 
      * @param SOCK_STREAM : specifies the comm. style of the socket 
      * @param 0 : protocol value
      */
