@@ -1,5 +1,15 @@
+
 #include <common.h>
 
+size_t n_byte;
+int send_all(int sockfd, const char *buf, size_t len)
+{
+    while (n_byte < len)
+    {
+        /* code */
+    }
+}
+    
 /**
  * @brief this main() creates a client socket that sends a message to the server
  * 
@@ -109,4 +119,5 @@ int main(int argc, char const* argv[])
 
     close(client_fd); //closes the file descriptor
     return 0;
+
 }
