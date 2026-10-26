@@ -4,7 +4,7 @@ void setup_signal_handlers(void);
 
 void ErrorManagement(const char *messaggio, int fd);
 
-int validate_command(const char *cmd);
+int validate_command(/*const char *cmd*/);
 
 int receive_command(int client_socket, char *buffer, size_t size);
 
@@ -17,7 +17,7 @@ int execute_command(int client_fd, const char *cmd);
  * @param argv 
  * @return int 
  */
-int main(int argc, char const* argv[])
+int main(void)
 {
     int server_fd, new_socket;
     ssize_t valread;
@@ -75,14 +75,6 @@ int main(int argc, char const* argv[])
     }
     printf("\n- Server-Socket status report: connection ACCEPTED\n");
 
-    /**
-     * @brief recv : receives a message from the communication socket (new_socket)
-     * 
-     * @param new_socket : communication socket between Cli and Serv
-     * @param buffer : Buffer containing the message
-     * @param 1024 - 1 : lenght of the buffer
-     * @param 0 : flag that specifies how the data should be sent 
-     */
     if ((valread = recv(new_socket, buffer, 1024 - 1, 0)) < 0)
     {
         ErrorManagement("Errore durante il recv", server_fd);  
@@ -97,24 +89,11 @@ int main(int argc, char const* argv[])
 
     execute_command(new_socket, buffer);
 
-    /**
-     * @brief lowercase letters => UPPERCASE letters
-     * 
-     */
-    for (int i = 0; i < strlen(buffer);i++)
+    for (size_t i = 0; i < strlen(buffer);i++)
     {
         CAPSbuffer[i] = toupper(buffer[i]);
     }
 
-
-    /**
-     * @brief send : sends a message trough the communication socket (new_socket)
-     * 
-     * @param new_socket : communication socket between Cli and Serv
-     * @param CAPSbuffer : Buffer containing the message
-     * @param strlen(CAPSbuffer) : lenght of the buffer
-     * @param 0 : flag that specifies how the data should be sent 
-     */
     if(send(new_socket, CAPSbuffer, strlen(CAPSbuffer), 0) < 0)
     {
         ErrorManagement("Errore durante il send", server_fd);
@@ -137,8 +116,9 @@ void ErrorManagement(const char *messaggio, int fd)
     exit(EXIT_FAILURE);
 }
 
-int validate_command(const char *cmd)
+int validate_command(/*const char *cmd*/)
 {
+    return 1;
     // TO DO
 }
 
@@ -159,10 +139,14 @@ int receive_command(int client_socket, char *buffer, size_t size)
                 perror("errore nella recezione");
                 return -1;
             }
-            if(n==0)
-            break;
-            if(c=='\n');
-            break;
+            if(n==0) {
+                break;
+            }
+                
+            if(c=='\n') {
+                break;
+            }
+            
             buffer[i] = c;
             i++;
         }
@@ -172,7 +156,7 @@ int receive_command(int client_socket, char *buffer, size_t size)
             i--;
         }
 
-
+        return 1;
 }
 
 int execute_command(int client_fd, const char *cmd)
