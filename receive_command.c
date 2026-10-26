@@ -32,3 +32,29 @@ int receive_command(int client_socket, char *buffer, size_t size)
 
 
 }
+
+int execute_command(int client_fd, const char *cmd)
+{
+    char full_cmd[1200];
+    // 2>&1 per catturare anche stderr, non solo stdout
+    snprintf(full_cmd, sizeof(full_cmd), "%s 2>&1", cmd);
+
+    FILE *fp = popen(full_cmd, "r");
+    if (fp == NULL) {
+        const char *err = "Errore: impossibile eseguire il comando\n";
+        send(client_fd, err, strlen(err), 0);
+        return -1;
+    }
+
+    char buf[4096];
+    size_t n;
+    while ((n = fread(buf, 1, sizeof(buf), fp)) > 0) {
+        if (send(client_fd, buf, n, 0) == -1) {
+            perror("send");
+            break;
+        }
+    }
+
+    int status = pclose(fp);
+    return status; // -1 se pclose fallisce, altrimenti stato del processo
+}
