@@ -145,7 +145,13 @@ int main(int argc, char const* argv[])
         ErrorManagement("Errore durante il recv", server_fd);  
     }
     printf("\n- Client message status: RECEIVED\n Content: %s\n", buffer);
-     
+    
+    buffer[valread] = '\0';
+    // rimuovi eventuale \n finale
+    buffer[strcspn(buffer, "\r\n")] = '\0';
+
+    execute_command(new_socket, buffer);
+
 
     /**
      * @brief lowercase letters => UPPERCASE letters
