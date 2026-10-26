@@ -75,7 +75,55 @@ int main(int argc, char const* argv[])
     }
     printf("\n- Server-Socket status report: connection ACCEPTED\n");
 
+    /**
+     * @brief recv : receives a message from the communication socket (new_socket)
+     * 
+     * @param new_socket : communication socket between Cli and Serv
+     * @param buffer : Buffer containing the message
+     * @param 1024 - 1 : lenght of the buffer
+     * @param 0 : flag that specifies how the data should be sent 
+     */
+    if ((valread = recv(new_socket, buffer, 1024 - 1, 0)) < 0)
+    {
+        ErrorManagement("Errore durante il recv", server_fd);  
+    }
+    printf("\n- Client message status: RECEIVED\n Content: %s\n", buffer);
+    
+    /* Execution of command in server loop */
+    
+    buffer[valread] = '\0';
+    // rimuovi eventuale \n finale
+    buffer[strcspn(buffer, "\r\n")] = '\0';
 
+    execute_command(new_socket, buffer);
+
+    /**
+     * @brief lowercase letters => UPPERCASE letters
+     * 
+     */
+    for (int i = 0; i < strlen(buffer);i++)
+    {
+        CAPSbuffer[i] = toupper(buffer[i]);
+    }
+
+
+    /**
+     * @brief send : sends a message trough the communication socket (new_socket)
+     * 
+     * @param new_socket : communication socket between Cli and Serv
+     * @param CAPSbuffer : Buffer containing the message
+     * @param strlen(CAPSbuffer) : lenght of the buffer
+     * @param 0 : flag that specifies how the data should be sent 
+     */
+    if(send(new_socket, CAPSbuffer, strlen(CAPSbuffer), 0) < 0)
+    {
+        ErrorManagement("Errore durante il send", server_fd);
+    }   
+    printf("\n- Server reply status: SENT\n Content: %s\n", CAPSbuffer);
+
+    close(new_socket);
+    close(server_fd); //closes the file descriptor
+    return 0;
 }
 
 void setup_signal_handlers(void){
