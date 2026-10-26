@@ -1,4 +1,3 @@
-
 #include "common.h"
 
 void setup_signal_handlers(void);
