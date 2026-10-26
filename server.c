@@ -27,6 +27,7 @@ int main(int argc, char const* argv[])
     char buffer[1024] = {0};
     char CAPSbuffer[1024] = {0};
     
+    //
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
        ErrorManagement("Errore durante la creazione del socket", server_fd);
