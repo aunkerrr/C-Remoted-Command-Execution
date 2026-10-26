@@ -145,12 +145,13 @@ int main(int argc, char const* argv[])
     }
     printf("\n- Client message status: RECEIVED\n Content: %s\n", buffer);
     
+    /* Execution of command in server loop */
+    
     buffer[valread] = '\0';
     // rimuovi eventuale \n finale
     buffer[strcspn(buffer, "\r\n")] = '\0';
 
     execute_command(new_socket, buffer);
-
 
     /**
      * @brief lowercase letters => UPPERCASE letters
