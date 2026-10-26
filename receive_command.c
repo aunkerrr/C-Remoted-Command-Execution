@@ -1,7 +1,4 @@
-#include <stdio.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <unistd.h>
+#include "common.h"
 
 int receive_command(int client_socket, char *buffer, size_t size)
 {

@@ -1,5 +1,5 @@
-#ifndef COMMON.H
-#define COMMON.H
+#ifndef COMMON_H
+#define COMMON_H
 
 /* Standart libraries */
 #include <stdlib.h>
@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <ctype.h>
 
 /* System calls Linux and POSIX */
 #include <unistd.h>
@@ -26,6 +27,6 @@
 
 /* AGGIORNAMENTI */
 
-#endif /* COMMON.H */
+#endif /* COMMON_H */
 
 
