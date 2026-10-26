@@ -1,17 +1,17 @@
 CC = gcc  
 CFLAGS = -g -Wall 
 
-TARGETS = ServSkt CliSkt
+TARGETS = server client
 .PHONY := clean		       
 .DEFAULT_GOAL := all	      
 
-all: ServSkt CliSkt 
+all: server client
 
-ServSkt: ServSkt.c					
-	$(CC) $(CFLAGS) ServSkt.c -o ServSkt.o  
+server: server.c					
+	$(CC) $(CFLAGS) server.c -o server.o  
 
-CliSkt: CliSkt.c					
-	$(CC) $(CFLAGS) CliSkt.c -o CliSkt.o 	 
+client: client.c					
+	$(CC) $(CFLAGS) client.c -o client.o 	 
 
 clean:
 	rm -f *.o
