@@ -5,7 +5,7 @@ void setup_signal_handlers(void){
     //TO DO
 }
 
-void gestioneErrore(const char *messaggio, int fd)
+void ErrorManagement(const char *messaggio, int fd)
 {
     perror(messaggio);
     close(fd);
@@ -54,12 +54,6 @@ int main(int argc, char const* argv[])
     }
     printf("\n- Server-Socket status report: CREATED\n");
    
-   
-    if (server_socket_fd < 0)
-{
-    gestioneErroreEsci("Errore nella creazione del socket");
-}
-
     /**
      * @brief setsockopt : sets the behavior of the socket
      * 
