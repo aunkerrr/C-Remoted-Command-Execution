@@ -4,11 +4,11 @@ void setup_signal_handlers(void);
 
 void ErrorManagement(const char *messaggio, int fd);
 
-int validate_command(const char *cmd);
+void* validate_command(const char *cmd);
 
-int receive_command(int client_socket, char *buffer, size_t size);
+void* receive_command(int client_socket, char *buffer, size_t size);
 
-int execute_command(int client_fd, const char *cmd);
+void* execute_command(int client_fd, const char *cmd);
 
 /**
  * @brief this main creates a server socket that listens for a client
@@ -100,7 +100,7 @@ int main(int argc, char const* argv[])
      * @brief lowercase letters => UPPERCASE letters
      * 
      */
-    for (int i = 0; i < strlen(buffer);i++)
+    for (size_t i = 0; i < strlen(buffer);i++)
     {
         CAPSbuffer[i] = toupper(buffer[i]);
     }
@@ -136,12 +136,12 @@ void ErrorManagement(const char *messaggio, int fd)
     exit(EXIT_FAILURE);
 }
 
-int validate_command(const char *cmd)
+void* validate_command(const char *cmd)
 {
     // TO DO
 }
 
-int receive_command(int client_socket, char *buffer, size_t size)
+void* receive_command(int client_socket, char *buffer, size_t size)
 {
     size_t i = 0;
     char c;
@@ -174,7 +174,7 @@ int receive_command(int client_socket, char *buffer, size_t size)
 
 }
 
-int execute_command(int client_fd, const char *cmd)
+void* execute_command(int client_fd, const char *cmd)
 {
     char full_cmd[1200];
     // 2>&1 per catturare anche stderr, non solo stdout
