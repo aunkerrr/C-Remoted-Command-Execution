@@ -1,10 +1,14 @@
 #include <common.h>
+#include "gestione_errori.h"
 
-void gestioneErrore(const char *messaggio)
+void gestioneErrore(const char *messaggio, int fd)
 {
     perror(messaggio);
-}
+    close(fd);
+    exit(EXIT_FAILURE);
 
+}
+v
 /**
  * @brief this main creates a server socket that listens for a client
  * 
@@ -35,12 +39,18 @@ int main(int argc, char const* argv[])
      */
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
-        perror("\n** Server-Socket status report: FAILED to create **\n Motivation: ");
+        
+       gestioneErroreEsci("Errore durante il socket");
         close(server_fd);
         exit(EXIT_FAILURE);
     }
     printf("\n- Server-Socket status report: CREATED\n");
-    
+   
+   
+    if (server_socket_fd < 0)
+{
+    gestioneErroreEsci("Errore nella creazione del socket");
+}
 
     /**
      * @brief setsockopt : sets the behavior of the socket
@@ -54,7 +64,7 @@ int main(int argc, char const* argv[])
      */
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)) < 0) 
     {
-        perror("\n** Server-Socket status report: FAILED to set operations **\n Motivation: ");
+        gestioneErroreEsci("Errore nella configurazione del socket");
         close(server_fd);
         exit(EXIT_FAILURE);
     }
@@ -74,7 +84,7 @@ int main(int argc, char const* argv[])
      */
     if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) 
     {
-        perror("\n** Server-Socket status report: FAILED to bind **\n Motivation: ");
+        gestioneErroreEsci("Errore durante il bind");
         close(server_fd);
         exit(EXIT_FAILURE);
     }
@@ -89,7 +99,7 @@ int main(int argc, char const* argv[])
      */
     if (listen(server_fd, 3) < 0)
     {
-        perror("\n** Server-Socket status report: FAILED to listen **\n Motivation: ");
+       gestioneErroreEsci("Errore durante il listen");
         close(server_fd);
         exit(EXIT_FAILURE);
     }
@@ -105,7 +115,7 @@ int main(int argc, char const* argv[])
      */
     if (getsockname(server_fd, (struct sockaddr *)&address, &addrlen) == -1) 
     {
-        perror("** getsockname failed **\n Motivation: ");
+        gestioneErroreEsci("Errore durante il getsocketname");
         return -1;
     }
 
@@ -130,7 +140,8 @@ int main(int argc, char const* argv[])
      */
     if ((new_socket = accept(server_fd, (struct sockaddr*)&address, &addrlen)) < 0)
     {
-        perror("\n** Server-Socket status report: FAILED to accept the connection **\n Motivation: ");
+        
+       gestioneErroreEsci("Errore durante il accept");
         close(new_socket);
         close(server_fd);
         exit(EXIT_FAILURE);
@@ -148,7 +159,8 @@ int main(int argc, char const* argv[])
      */
     if ((valread = recv(new_socket, buffer, 1024 - 1, 0)) < 0)
     {
-        perror("\n** Client message status: FAILED to RECEIVE **\n Motivation: ");
+        
+       gestioneErroreEsci("Errore durante il recv");
         close(new_socket);
         close(server_fd);
         exit(EXIT_FAILURE);
@@ -176,7 +188,8 @@ int main(int argc, char const* argv[])
      */
     if(send(new_socket, CAPSbuffer, strlen(CAPSbuffer), 0) < 0)
     {
-        perror("\n** Client message status: FAILED to SEND **\n Motivation: ");
+        
+       gestioneErroreEsci("Errore durante il send");
         close(new_socket);
         close(server_fd);
         exit(EXIT_FAILURE);
