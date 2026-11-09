@@ -1,14 +1,22 @@
 #include "common.h"
+#include <pthread.h>
+
+/* Contesto di una connessione: passato ai thread receive_command ed execute_command */
+typedef struct {
+    int  client_fd;                  /* socket del client */
+    char cmd[CLIENT_BUFFER_SIZE];    /* comando ricevuto */
+    int  status;                     /* esito di execute_command (stato di pclose) */
+} client_ctx_t;
 
 void setup_signal_handlers(void);
 
 void ErrorManagement(const char *messaggio, int fd);
 
-int validate_command(/*const char *cmd*/);
+int validate_command(const char *cmd);
 
-int receive_command(int client_socket, char *buffer, size_t size);
+void* receive_command(void *arg);
 
-int execute_command(int client_fd, const char *cmd);
+void* execute_command(void *arg);
 
 /**
  * @brief this main creates a server socket that listens for a client
@@ -20,12 +28,9 @@ int execute_command(int client_fd, const char *cmd);
 int main(void)
 {
     int server_fd, new_socket;
-    ssize_t valread;
     struct sockaddr_in address;
     int opt = 1;
     socklen_t addrlen = sizeof(address);
-    char buffer[1024] = {0};
-    char CAPSbuffer[1024] = {0};
     
     //
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
@@ -69,38 +74,44 @@ int main(void)
     
     printf("\n --- the server is listening on: %s:%d ---\n", ip_str, port);
 
-    if ((new_socket = accept(server_fd, (struct sockaddr*)&address, &addrlen)) < 0)
+    /* Server loop: ogni client accettato viene gestito da un thread dedicato */
+    while (1)
     {
-        ErrorManagement("Errore durante il accept", server_fd);    
+        struct sockaddr_in client_addr;
+        socklen_t client_len = sizeof(client_addr);
+
+        if ((new_socket = accept(server_fd, (struct sockaddr*)&client_addr, &client_len)) < 0)
+        {
+            if (errno == EINTR || errno == ECONNABORTED)
+            {
+                continue;
+            }
+            ErrorManagement("Errore durante il accept", server_fd);
+        }
+        printf("\n- Server-Socket status report: connection ACCEPTED\n");
+
+        client_ctx_t *ctx = calloc(1, sizeof(*ctx));
+        if (ctx == NULL)
+        {
+            perror("Errore calloc");
+            close(new_socket);
+            continue;
+        }
+        ctx->client_fd = new_socket;
+
+        /* Thread detached: libera da solo le proprie risorse quando termina */
+        pthread_t tid;
+        int rc = pthread_create(&tid, NULL, receive_command, ctx);
+        if (rc != 0)
+        {
+            fprintf(stderr, "Errore pthread_create: %s\n", strerror(rc));
+            close(new_socket);
+            free(ctx);
+            continue;
+        }
+        pthread_detach(tid);
     }
-    printf("\n- Server-Socket status report: connection ACCEPTED\n");
 
-    if ((valread = recv(new_socket, buffer, 1024 - 1, 0)) < 0)
-    {
-        ErrorManagement("Errore durante il recv", server_fd);  
-    }
-    printf("\n- Client message status: RECEIVED\n Content: %s\n", buffer);
-    
-    /* Execution of command in server loop */
-    
-    buffer[valread] = '\0';
-    // rimuovi eventuale \n finale
-    buffer[strcspn(buffer, "\r\n")] = '\0';
-
-    execute_command(new_socket, buffer);
-
-    for (size_t i = 0; i < strlen(buffer);i++)
-    {
-        CAPSbuffer[i] = toupper(buffer[i]);
-    }
-
-    if(send(new_socket, CAPSbuffer, strlen(CAPSbuffer), 0) < 0)
-    {
-        ErrorManagement("Errore durante il send", server_fd);
-    }   
-    printf("\n- Server reply status: SENT\n Content: %s\n", CAPSbuffer);
-
-    close(new_socket);
     close(server_fd); //closes the file descriptor
     return 0;
 }
@@ -116,71 +127,125 @@ void ErrorManagement(const char *messaggio, int fd)
     exit(EXIT_FAILURE);
 }
 
-int validate_command(/*const char *cmd*/)
+int validate_command(const char *cmd)
 {
-    return 1;
     // TO DO
 }
 
-int receive_command(int client_socket, char *buffer, size_t size)
+/**
+ * @brief Thread: legge il comando dal client (fino a '\n'), poi avvia il thread
+ *        execute_command e ne attende la fine. Chiude la connessione e libera il contesto.
+ *
+ * @param arg client_ctx_t* allocato dal main (il thread ne diventa proprietario)
+ */
+void* receive_command(void *arg)
 {
+    client_ctx_t *ctx = (client_ctx_t *)arg;
+    size_t size = sizeof(ctx->cmd);
     size_t i = 0;
     char c;
     ssize_t n;
 
-    if (buffer == NULL || size < 2)
+    while (i < size - 1)
     {
-        return -1;
-    }
-        while (i < size - 1)
+        n = recv(ctx->client_fd, &c, 1, 0);
+        if (n < 0)
         {
-            n = recv(client_socket, &c, 1,0);
-            if(n<0){
-                perror("errore nella recezione");
-                return -1;
+            if (errno == EINTR)
+            {
+                continue;
             }
-            if(n==0) {
-                break;
-            }
-                
-            if(c=='\n') {
-                break;
-            }
-            
-            buffer[i] = c;
-            i++;
+            perror("errore nella recezione");
+            goto cleanup;
         }
-        buffer[i] = '\0';
-        if(i>0 && buffer[i-1] == '\r'){
-            buffer[i-1] = '\0';
-            i--;
+        if (n == 0)
+        {
+            break;
         }
 
-        return 1;
+        if (c == '\n')
+        {
+            break;
+        }
+
+        ctx->cmd[i] = c;
+        i++;
+    }
+    ctx->cmd[i] = '\0';
+    if (i > 0 && ctx->cmd[i-1] == '\r')
+    {
+        ctx->cmd[i-1] = '\0';
+        i--;
+    }
+    printf("\n- Client message status: RECEIVED\n Content: %s\n", ctx->cmd);
+
+    if (i > 0)
+    {
+        pthread_t exec_tid;
+        int rc = pthread_create(&exec_tid, NULL, execute_command, ctx);
+        if (rc != 0)
+        {
+            fprintf(stderr, "Errore pthread_create: %s\n", strerror(rc));
+            goto cleanup;
+        }
+        pthread_join(exec_tid, NULL);
+
+        /**
+         * @brief lowercase letters => UPPERCASE letters
+         */
+        char CAPSbuffer[CLIENT_BUFFER_SIZE] = {0};
+        for (size_t k = 0; k < strlen(ctx->cmd); k++)
+        {
+            CAPSbuffer[k] = toupper((unsigned char)ctx->cmd[k]);
+        }
+
+        if (send(ctx->client_fd, CAPSbuffer, strlen(CAPSbuffer), MSG_NOSIGNAL) < 0)
+        {
+            perror("Errore durante il send");
+        }
+        else
+        {
+            printf("\n- Server reply status: SENT\n Content: %s\n", CAPSbuffer);
+        }
+    }
+
+cleanup:
+    close(ctx->client_fd);
+    free(ctx);
+    return NULL;
 }
 
-int execute_command(int client_fd, const char *cmd)
+/**
+ * @brief Thread: esegue ctx->cmd con popen() e invia l'output (stdout+stderr) al client.
+ *        Lo stato di pclose() viene salvato in ctx->status.
+ *
+ * @param arg client_ctx_t* (di proprieta' del thread receive_command, che fa la join)
+ */
+void* execute_command(void *arg)
 {
-    char full_cmd[1200];
+    client_ctx_t *ctx = (client_ctx_t *)arg;
+    char full_cmd[CLIENT_BUFFER_SIZE + 16];
     // 2>&1 per catturare anche stderr, non solo stdout
-    snprintf(full_cmd, sizeof(full_cmd), "%s 2>&1", cmd);
+    snprintf(full_cmd, sizeof(full_cmd), "%s 2>&1", ctx->cmd);
 
     FILE *fp = popen(full_cmd, "r");
     if (fp == NULL) {
         const char *err = "Errore: impossibile eseguire il comando\n";
-        send(client_fd, err, strlen(err), 0);
-        return -1;
+        send(ctx->client_fd, err, strlen(err), MSG_NOSIGNAL);
+        ctx->status = -1;
+        return NULL;
     }
 
-    char buf[4096];
+    char buf[CHUNK_BUFFER_SIZE];
     size_t n;
     while ((n = fread(buf, 1, sizeof(buf), fp)) > 0) {
-        if (send(client_fd, buf, n, 0) == -1) {
+        /* MSG_NOSIGNAL: se il client chiude, niente SIGPIPE che ucciderebbe tutto il server */
+        if (send(ctx->client_fd, buf, n, MSG_NOSIGNAL) == -1) {
             perror("send");
             break;
         }
     }
 
-    int status = pclose(fp);
-    return status; // -1 se pclose fallisce, altrimenti stato del processo
+    ctx->status = pclose(fp); // -1 se pclose fallisce, altrimenti stato del processo
+    return NULL;
 }
