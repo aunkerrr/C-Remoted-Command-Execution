@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <ctype.h>
+#include <pthread.h>
 
 /* Chiamate di sistema Linux e POSIX */
 #include <unistd.h>

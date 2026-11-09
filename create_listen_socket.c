@@ -1,5 +1,4 @@
 #include "common.h"
-#include "server.c"
 
 int create_listen_socket(int optimal_backlog) {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -19,7 +18,7 @@ int create_listen_socket(int optimal_backlog) {
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    addr.sin_port = PORT;
+    addr.sin_port = hton(PORT);
 
     if(bind(fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
         ErrorManagementWithOpenedSocket("Cannot set opt property. Exiting...", fd);
