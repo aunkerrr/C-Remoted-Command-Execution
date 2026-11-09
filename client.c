@@ -17,8 +17,8 @@ int main(int argc, char const* argv[])
         printf("** WRONG ARGUMENTS **\nExample: \n./file.o <Indirizzo IP Server> <Porta> <Message>\n");
         return EXIT_FAILURE;
     }
-    
-    char* server_ip = argv[1];
+
+    char *server_ip = argv[1];
     char* server_port = argv[2];
     char* text = argv[3];
     
