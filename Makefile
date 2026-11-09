@@ -1,17 +1,17 @@
-CC = gcc  
-CFLAGS = -g -Wall -Wextra -Werror -pthread 
+CC = gcc
+CFLAGS = -g -Wall -Wextra -pthread
+TARGETS = server client
 
-TARGETS = Server Client
-.PHONY := clean		       
-.DEFAULT_GOAL := all	      
+.PHONY: all clean
+.DEFAULT_GOAL := all
 
-all: Server Client 
+all: $(TARGETS)
 
-Server: server.c					
-	$(CC) $(CFLAGS) server.c -o server.o  
+server: server.c common.h
+	$(CC) $(CFLAGS) server.c -o server
 
-Client: client.c					
-	$(CC) $(CFLAGS) client.c -o client.o 	 
+client: client.c common.h
+	$(CC) $(CFLAGS) client.c -o client
 
 clean:
-	rm -f *.o
+	rm -f $(TARGETS) *.o

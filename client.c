@@ -1,87 +1,90 @@
 #include "common.h"
 
-int send_all(int sockfd, const char *buf) {
-    char msg[CLIENT_BUFFER_SIZE];
-    int msg_len = snprintf(msg, sizeof(msg), "%s\n", buf);
-    if (msg_len < 0 || (size_t)msg_len >= sizeof(msg)) {
-        fprintf(stderr, "Errore: comando troppo lungo.\n");
-        return -1;
-    }
-
-    size_t sent = 0;
-    size_t total_to_send = (size_t)msg_len;
-    while (sent < total_to_send) {
-        ssize_t n = send(sockfd, msg + sent, total_to_send - sent, 0);
-        if (n < 0) {
-            perror("Errore durante l'invio (send)");
-            return -1;
-        }
-        sent += n;
-    }
-    printf("- Client message status: SENT\n Content: %s", msg);
-
-    // Ricezione dello stream di risposta inviato dal server
-    char recv_buf[CHUNK_BUFFER_SIZE];
-    ssize_t n;
-    printf("- Server reply status: RECEIVING OUTPUT...\n");
-    while ((n = recv(sockfd, recv_buf, sizeof(recv_buf) - 1, 0)) > 0) {
-        recv_buf[n] = '\0';
-        fwrite(recv_buf, 1, n, stdout);
-    }
-
-    if (n < 0) {
-        perror("Errore durante la ricezione (recv)");
-        return -1;
-    }
-
-    return 0;
-}
-
-int main(int argc, char const* argv[])
+int main(int argc, char *argv[])
 {
-    int status, client_fd;
-    
-    if (argc != 4)
+    if (argc != 3)
     {
-        printf("** WRONG ARGUMENTS **\nExample: \n./client.o <Indirizzo IP Server> <Porta> <Message>\n");
+        fprintf(stderr, "** ARGOMENTI ERRATI **\nUso: %s <indirizzo IP server> <porta>\n"
+                        "Esempio: %s 127.0.0.1 8080\n", argv[0], argv[0]);
         return EXIT_FAILURE;
     }
-    
-    const char* server_ip = argv[1];
-    int server_port = atoi(argv[2]);
-    const char* text = argv[3];
-    
-    if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
+
+    const char *server_ip = argv[1];
+    int server_port = parse_port(argv[2]);
+    if (server_port < 0)
     {
-        perror("\n** Client-Socket status report: socket creation failed **");
+        fprintf(stderr, "** Errore: porta non valida (%s). Valori ammessi: 1-65535 **\n", argv[2]);
         return EXIT_FAILURE;
     }
-    printf("\n- Client-Socket status report: client-socket CREATED\n");
-    
+
+    /* Il comando si legge da stdin */
+    char cmd[CLIENT_BUFFER_SIZE];
+    fprintf(stderr, "Comando da eseguire: ");
+    if (fgets(cmd, sizeof(cmd), stdin) == NULL)
+    {
+        fprintf(stderr, "** Errore: nessun comando letto da stdin **\n");
+        return EXIT_FAILURE;
+    }
+    if (strchr(cmd, '\n') == NULL && strlen(cmd) == sizeof(cmd) - 1)
+    {
+        fprintf(stderr, "** Errore: comando troppo lungo (massimo %d caratteri) **\n", CLIENT_BUFFER_SIZE - 2);
+        return EXIT_FAILURE;
+    }
+    size_t len = strcspn(cmd, "\r\n");
+    cmd[len] = '\0';
+    if (len == 0)
+    {
+        fprintf(stderr, "** Errore: comando vuoto **\n");
+        return EXIT_FAILURE;
+    }
+
+    int client_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (client_fd < 0)
+    {
+        ErrorManagement("** Errore nella creazione del socket", -1);
+    }
+
     struct sockaddr_in server_addr;
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(server_port);
+    server_addr.sin_port = htons((uint16_t)server_port);
 
-    if (inet_pton(AF_INET, server_ip, &server_addr.sin_addr) <= 0) 
+    if (inet_pton(AF_INET, server_ip, &server_addr.sin_addr) <= 0)
     {
-        fprintf(stderr, "** Error: IP address not valid (%s) **\n", server_ip);
+        fprintf(stderr, "** Errore: indirizzo IP non valido (%s) **\n", server_ip);
         close(client_fd);
         return EXIT_FAILURE;
     }
 
-    if ((status = connect(client_fd, (struct sockaddr*)&server_addr, sizeof(server_addr))) < 0)
+    if (connect(client_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
     {
-        perror("\n** Client-Socket status report: connection FAILED **");
-        close(client_fd);
-        return EXIT_FAILURE;
+        ErrorManagement("** Connessione fallita", client_fd);
     }
-    printf("- Client-Socket status report: connection SUCCESSFUL\n");
 
-    if (send_all(client_fd, text) < 0) {
+    /* Comando + '\n', poi chiusura della scrittura: il server sa che il comando e' finito */
+    if (send_all(client_fd, cmd, len) < 0 || send_all(client_fd, "\n", 1) < 0)
+    {
+        perror("** Errore durante l'invio");
         close(client_fd);
         return EXIT_FAILURE;
     }
+    shutdown(client_fd, SHUT_WR);
+
+    /* Ricezione dell'output completo fino alla chiusura da parte del server */
+    char buf[CHUNK_BUFFER_SIZE];
+    ssize_t n;
+    while ((n = recv(client_fd, buf, sizeof(buf), 0)) != 0)
+    {
+        if (n < 0)
+        {
+            if (errno == EINTR) continue;
+            perror("** Errore durante la ricezione");
+            close(client_fd);
+            return EXIT_FAILURE;
+        }
+        fwrite(buf, 1, (size_t)n, stdout);
+    }
+    fflush(stdout);
 
     close(client_fd);
     return EXIT_SUCCESS;

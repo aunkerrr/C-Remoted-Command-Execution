@@ -13,6 +13,19 @@ The project consists of two separate programs communicating over Internet domain
 - **I/O Redirection & Pipes:** Execution via `popen()` and chunked response streaming (`fgets`, `send`).
 - **Build Automation:** Includes a simple `Makefile` to build both `server` and `client` binaries.
 
+## Compilazione e uso
+
+```
+make                      # produce gli eseguibili ./server e ./client
+./server [porta] [ip]     # default: 8080 su 127.0.0.1 (non avviare come root)
+./client <ip> <porta>     # il comando si scrive su stdin
+echo "ls -l" | ./client 127.0.0.1 8080
+```
+
+Il server accetta solo comandi la cui prima parola e' nella whitelist (`ls`, `pwd`, `whoami`, `date`, ...)
+e rifiuta i metacaratteri della shell `; | & $ \ < > ( ) ``. Massimo 16 client contemporanei,
+timeout di 30 s in ricezione e 10 s per l'esecuzione del comando.
+
 ## Security Considerations
 
 *Educational Warning:* This system demonstrates unauthenticated remote command execution over plaintext TCP. It serves as a practical case study for several critical vulnerabilities:
