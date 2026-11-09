@@ -10,7 +10,9 @@ typedef struct {
 
 void setup_signal_handlers(void);
 
-void ErrorManagement(const char *messaggio, int fd);
+void ErrorManagementWithClosedSocket(const char *message);
+
+void ErrorManagementWithOpenedSocket(const char *messaggio, int fd);
 
 int validate_command(const char *cmd);
 
@@ -25,8 +27,14 @@ void* execute_command(void *arg);
  * @param argv 
  * @return int 
  */
-int main(void)
+int main(int argc, char *argv[])
 {
+    int user_backlog = (argc >= 3) ? atoi(argv[2]) : 0;
+    int optimal_backlog = calculate_optimal_backlog(user_backlog);
+    
+    printf("[INIT] Logical cores in system: %ld\n", sysconf(_SC_NPROCESSORS_ONLN));
+    printf("[INIT] Final TCP backlog size: %d\n", optimal_backlog);
+
     int server_fd, new_socket;
     struct sockaddr_in address;
     int opt = 1;
@@ -35,13 +43,13 @@ int main(void)
     //
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
-       ErrorManagement("Errore durante la creazione del socket", server_fd);
+       ErrorManagementWithOpenedSocket("Errore durante la creazione del socket", server_fd);
     }
     printf("\n- Server-Socket status report: CREATED\n");
    
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)) < 0) 
     {
-        ErrorManagement("Errore nella configurazione del socket", server_fd);
+        ErrorManagementWithOpenedSocket("Errore nella configurazione del socket", server_fd);
     }
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
@@ -51,20 +59,20 @@ int main(void)
 
     if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) 
     {
-        ErrorManagement("Errore durante il bind", server_fd);
+        ErrorManagementWithOpenedSocket("Errore durante il bind", server_fd);
  
     }
     printf("\n- Server-Socket status report: binding occured SUCCESSFULLY\n");
 
     if (listen(server_fd, 3) < 0)
     {
-        ErrorManagement("Errore durante il listen", server_fd);
+        ErrorManagementWithOpenedSocket("Errore durante il listen", server_fd);
     }
     printf("\n- Server-Socket status report: LISTENING\n");
 
     if (getsockname(server_fd, (struct sockaddr *)&address, &addrlen) == -1) 
     {
-        ErrorManagement("Errore durante il getsocketname", server_fd);
+        ErrorManagementWithOpenedSocket("Errore durante il getsocketname", server_fd);
     }
 
     char ip_str[INET_ADDRSTRLEN];
@@ -86,7 +94,7 @@ int main(void)
             {
                 continue;
             }
-            ErrorManagement("Errore durante il accept", server_fd);
+            ErrorManagementWithOpenedSocket("Errore durante il accept", server_fd);
         }
         printf("\n- Server-Socket status report: connection ACCEPTED\n");
 
@@ -120,7 +128,12 @@ void setup_signal_handlers(void){
     //TO DO
 }
 
-void ErrorManagement(const char *messaggio, int fd)
+void ErrorManagementWithClosedSocket(const char *message) {
+    perror(message);
+    exit(EXIT_FAILURE);
+}
+
+void ErrorManagementWithOpenedSocket(const char *messaggio, int fd)
 {
     perror(messaggio);
     close(fd);
