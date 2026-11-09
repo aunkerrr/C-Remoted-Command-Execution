@@ -145,8 +145,9 @@ void* receive_command(void *arg)
     size_t i = 0;
     char c;
     ssize_t n;
+    int troppo_lungo = 0;
 
-    while (i < size - 1)
+    while (1)
     {
         n = recv(ctx->client_fd, &c, 1, 0);
         if (n < 0)
@@ -168,14 +169,24 @@ void* receive_command(void *arg)
             break;
         }
 
+       if(i < size -1){
         ctx->cmd[i] = c;
         i++;
+       }
+       else {
+        troppo_lungo= 1;
+       }
     }
     ctx->cmd[i] = '\0';
     if (i > 0 && ctx->cmd[i-1] == '\r')
     {
         ctx->cmd[i-1] = '\0';
         i--;
+    }
+    if(troppo_lungo){
+    const char *msg = "errore: comando troppo lungo\n";
+    send(ctx->client_fd, msg, strlen(msg), MSG_NOSIGNAL);
+    goto cleanup;
     }
     printf("\n- Client message status: RECEIVED\n Content: %s\n", ctx->cmd);
 
