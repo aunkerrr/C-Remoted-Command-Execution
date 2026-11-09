@@ -1,5 +1,6 @@
 #include "common.h"
-#include <pthread.h>
+
+
 
 /* Contesto di una connessione: passato ai thread receive_command ed execute_command */
 typedef struct {
