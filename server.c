@@ -10,9 +10,6 @@ typedef struct {
 
 void setup_signal_handlers(void);
 
-void ErrorManagementWithClosedSocket(const char *message);
-
-void ErrorManagementWithOpenedSocket(const char *messaggio, int fd);
 
 int validate_command(const char *cmd);
 
@@ -126,18 +123,6 @@ int main(int argc, char *argv[])
 
 void setup_signal_handlers(void){
     //TO DO
-}
-
-void ErrorManagementWithClosedSocket(const char *message) {
-    perror(message);
-    exit(EXIT_FAILURE);
-}
-
-void ErrorManagementWithOpenedSocket(const char *messaggio, int fd)
-{
-    perror(messaggio);
-    close(fd);
-    exit(EXIT_FAILURE);
 }
 
 int validate_command(const char *cmd)

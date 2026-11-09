@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <ctype.h>
+#include <pthread.h>
 
 /* System calls Linux and POSIX */
 #include <unistd.h>
@@ -25,7 +26,13 @@
 #define CLIENT_BUFFER_SIZE 1024    /* Dimensione massima della stringa del comando inviato dal client */
 #define CHUNK_BUFFER_SIZE  4096    /* Dimensione del blocco per la lettura dell'output da popen() e l'invio */
 
-/* AGGIORNAMENTI */
+/* Prototypes */
+int calculate_optimal_backlog(int requested_backlog);
+int create_listen_socket(int optimal_backlog);
+
+void ErrorManagementWithClosedSocket(const char *message);
+void ErrorManagementWithOpenedSocket(const char *messaggio, int fd);
+
 
 #endif /* COMMON_H */
 

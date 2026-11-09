@@ -26,9 +26,7 @@ int main(int argc, char const* argv[])
     
     if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
     {
-        perror("\n** Client-Socket status report: socket creation failed **\n Motivation: ");
-        close(client_fd);
-        return EXIT_FAILURE;
+        ErrorManagementWithClosedSocket("** Client-Socket: socket creation failed **");
     }
     printf("\n- Client-Socket status report: client-socket CREATED\n");
     
@@ -40,32 +38,24 @@ int main(int argc, char const* argv[])
 
     if (inet_pton(AF_INET, server_ip, &server_addr.sin_addr) <= 0) 
     {
-        fprintf(stderr, "** Error: IP address not valid (%s) **\n", server_ip);
-        close(client_fd);
-        return EXIT_FAILURE;
+        ErrorManagementWithOpenedSocket("** Error: IP address not valid **", client_fd);
     }
 
     if ((status = connect(client_fd, (struct sockaddr*)&server_addr, sizeof(server_addr))) < 0)
     {
-        perror("\n** Client-Socket status report: connection FAILED **\n Motivation: ");
-        close(client_fd);
-        return EXIT_FAILURE;
+        ErrorManagementWithOpenedSocket("** Client-Socket: connection FAILED **", client_fd);
     }
     printf("\n- Client-Socket status report: connection SUCCESSFULL\n");
 
     if (send(client_fd, text, strlen(text), 0) < 0)
     {
-        perror("\n** Client message status: FAILED to SEND **\n Motivation: ");
-        close(client_fd);
-        return EXIT_FAILURE;
+        ErrorManagementWithOpenedSocket("** Client message status: FAILED to SEND **", client_fd);
     }
     printf("\n- Client message status: SENT\n Content: %s\n", text);
     
-    if (valread = recv(client_fd, buffer, 1024 - 1, 0) < 0)
+    if ((valread = recv(client_fd, buffer, sizeof(buffer) - 1, 0)) < 0)
     {
-        perror("\n** Client-Socket status report: FAILED to RECEIVE **\n Motivation: ");
-        close(client_fd);
-        return EXIT_FAILURE;
+        ErrorManagementWithOpenedSocket("** Client-Socket: FAILED to RECEIVE **", client_fd);
     }
     printf("\n- Server reply status: RECEIVED\n Content: %s\n", buffer);
 
